@@ -142,6 +142,6 @@ public class LibraryModel {
 	}
 
 	private String getUrl() {
-		return "jdbc:postgresql://localhost:5432/300266784_pdbc";
+		return "jdbc:postgresql://localhost:5432/mortimmatt_jdbc";
 	}
 }
