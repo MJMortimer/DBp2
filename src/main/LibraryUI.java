@@ -1,10 +1,10 @@
 package main;
-/*
 
+/*
  * LibraryUI.java former Comp302.java
  *
  * Created on March 6, 2003, 2:52 PM with netbeans
- *
+ * 
  * Updated on March 25 2005 by Jerome Dolman
  */
 
@@ -266,7 +266,7 @@ public class LibraryUI extends JFrame {
 	String[] months = { "January", "February", "March", "April",
 			    "May", "June", "July", "August",
 			    "September", "October", "November", "December" };
-	String[] years = { "2005", "2006", "2007", "2008", "2009", "2010", "2011","2012","2013","2014","2015"};
+	String[] years = { "2005", "2006", "2007", "2008", "2009", "2010", "2011","2012","2013","2014","2015"}; 
         borDay.setModel(new DefaultComboBoxModel(days));
         borMonth.setModel(new DefaultComboBoxModel(months));
         borYear.setModel(new DefaultComboBoxModel(years));
@@ -516,7 +516,7 @@ public class LibraryUI extends JFrame {
 	    appendOutput(model.bookLookup(isbn));
 	}
     }
-
+    
     private class DeleteCustomerAction extends LookupAction {
     	public DeleteCustomerAction() {
     	    super("Delete Customer", "customer ID");
@@ -525,7 +525,7 @@ public class LibraryUI extends JFrame {
     	    appendOutput(model.deleteCus(customerID));
     	}
     }
-
+    
     private class DeleteAuthorAction extends LookupAction {
     	public DeleteAuthorAction() {
     	    super("Delete Author", "author ID");
@@ -628,11 +628,11 @@ class AuthDialog extends JDialog {
     public AuthDialog(JFrame parent) {
 	this(parent, "Authentication", true);
     }
-
+    
     public AuthDialog(JFrame parent, String title) {
 	this(parent, title, true);
     }
-
+    
     public AuthDialog(final JFrame parent, String title, boolean modal) {
 	super(parent, title, modal);
 
@@ -648,7 +648,7 @@ class AuthDialog extends JDialog {
 	// Set up OK button behaviour
 	JButton okButton = new JButton("OK");
 	okButton.addActionListener(new ActionListener() {
-		public void actionPerformed(ActionEvent e) {
+		public void actionPerformed(ActionEvent e) { 
 		    if (getUserName().length() == 0) {
 			showMessageDialog(AuthDialog.this,
 					  "Please enter a username",
@@ -704,7 +704,7 @@ class AuthDialog extends JDialog {
 	getRootPane().setDefaultButton(okButton);
 
 	// And that the escape key exits
-	InputMap inputMap =
+	InputMap inputMap = 
 	    getRootPane().getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 	ActionMap actionMap = getRootPane().getActionMap();
 	inputMap.put(getKeyStroke("ESCAPE"), "exitAction");
@@ -720,7 +720,7 @@ class AuthDialog extends JDialog {
 	// Center on the screen
 	setLocationRelativeTo(null);
     }
-
+	
     public String getUserName() {
 	return usernameTf.getText();
     }

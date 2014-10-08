@@ -1,6 +1,7 @@
 package main;
-/*
 
+
+/*
  * LibraryModel.java
  * Author:
  * Created on:
@@ -25,26 +26,75 @@ public class LibraryModel {
 	public LibraryModel(JFrame parent, String userid, String password) {
 		dialogParent = parent;
 		try {
-			con = DriverManager.getConnection(getURL(), userid, password);
+			con = DriverManager.getConnection(getUrl(), userid, password);
 		} catch (SQLException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
 	public String bookLookup(int isbn) {
-		String select = "SELECT * FROM Book WHERE ISBN ="+isbn;
+		String select =String.format("Select b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors  From Book b, Author a, Book_Author ba WHERE b.isbn = %d AND b.isbn = ba.isbn AND a.authorid = ba.authorid group by b.isbn ORDER BY b.isbn ASC;", isbn);
+		Statement stmt;
 		try {
-			Statement stmt = con.createStatement();
-			ResultSet rs = stmt.executeQuery(select);
+			stmt = con.createStatement();
+			ResultSet res = stmt.executeQuery(select);
+			//CHECK FOR BADNESS
+			StringBuilder sb = new StringBuilder();
+			sb.append("Book Lookup:"+"\n");
+			/*
+			 * Select b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors  
+			 * From Book b, Author a, Book_Author ba 
+			 * WHERE b.isbn = ba.isbn AND a.authorid = ba.authorid 
+			 * group by b.isbn 
+			 * ORDER BY b.isbn ASC;
+			 * 
+			 */
+			
+			while(res.next()){				
+				sb.append(String.format("\t%d: %s\n",res.getInt("ISBN"), res.getString("title")));
+				sb.append(String.format("\tEdition: %d - Number of Copies: %d - Copies Left: %d\n", res.getInt("Edition_No"), res.getInt("NumOfCop"), res.getInt("NumLeft")));
+				String authors = res.getString("authors");
+				sb.append(String.format("\t%s: %s", (authors.contains(",")? "Authors" : "Author"), authors));
+			}
+			return sb.toString();
 		} catch (SQLException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-
-		return "Lookup Book Stub";
+			return (e.getMessage());
+		}		
 	}
 
 	public String showCatalogue() {
-		return "Show Catalogue Stub";
+		String select =String.format("Select b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors From Book b, Author a, Book_Author ba WHERE b.isbn = ba.isbn AND a.authorid = ba.authorid group by b.isbn ORDER BY b.isbn ASC;");
+		Statement stmt;
+		try {
+			stmt = con.createStatement();
+			ResultSet res = stmt.executeQuery(select);
+			//CHECK FOR BADNESS
+			StringBuilder sb = new StringBuilder();
+			sb.append("Show Catalogue:"+"\n");
+			/*
+			 * Select b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors  
+			 * From Book b, Author a, Book_Author ba 
+			 * WHERE b.isbn = ba.isbn AND a.authorid = ba.authorid 
+			 * group by b.isbn 
+			 * ORDER BY b.isbn ASC;
+			 * 
+			 */
+			
+			while(res.next()){				
+				sb.append(String.format("%d: %s\n",res.getInt("ISBN"), res.getString("title")));
+				sb.append(String.format("\tEdition: %d - Number of Copies: %d - Copies Left: %d\n", res.getInt("Edition_No"), res.getInt("NumOfCop"), res.getInt("NumLeft")));
+				String authors = res.getString("authors");
+				sb.append(String.format("\t%s: %s\n", (authors.contains(",")? "Authors" : "Author"), authors));
+			}
+			return sb.toString();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return (e.getMessage());
+		}		
 	}
 
 	public String showLoanedBooks() {
@@ -91,7 +141,7 @@ public class LibraryModel {
 		return "Delete Book";
 	}
 
-	private String getURL() {
-		return "jdbc:postgresql://db.ecs.vuw.ac.nz/mortimmatt_jdbc";
+	private String getUrl() {
+		return "jdbc:postgresql://localhost:5432/300266784_pdbc";
 	}
 }
