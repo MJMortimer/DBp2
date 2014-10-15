@@ -50,15 +50,11 @@ public class LibraryModel {
 			//CHECK FOR BADNESS
 			StringBuilder sb = new StringBuilder();
 			sb.append("Book Lookup:"+"\n");
-			/*
-			 * Select b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors  
-			 * From Book b, Author a, Book_Author ba 
-			 * WHERE b.isbn = ba.isbn AND a.authorid = ba.authorid 
-			 * group by b.isbn 
-			 * ORDER BY b.isbn ASC;
-			 * 
-			 */
-
+			if(!res.next()){
+				System.out.println("No book exists with isbn "+ isbn);
+				return "No book exists with isbn "+ isbn;
+			}
+			
 			while(res.next()){				
 				sb.append(String.format("\t%d: %s\n",res.getInt("ISBN"), res.getString("title")));
 				sb.append(String.format("\tEdition: %d - Number of Copies: %d - Copies Left: %d\n", res.getInt("Edition_No"), res.getInt("NumOfCop"), res.getInt("NumLeft")));
@@ -85,18 +81,8 @@ public class LibraryModel {
 		try {
 			stmt = con.createStatement();
 			ResultSet res = stmt.executeQuery(select);
-			//CHECK FOR BADNESS
 			StringBuilder sb = new StringBuilder();
 			sb.append("Show Catalogue:"+"\n");
-			/*
-			 * Select b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors  
-			 * From Book b, Author a, Book_Author ba 
-			 * WHERE b.isbn = ba.isbn AND a.authorid = ba.authorid 
-			 * group by b.isbn 
-			 * ORDER BY b.isbn ASC;
-			 * 
-			 */
-
 			while(res.next()){				
 				sb.append(String.format("%d: %s\n",res.getInt("ISBN"), res.getString("title")));
 				sb.append(String.format("\tEdition: %d - Number of Copies: %d - Copies Left: %d\n", res.getInt("Edition_No"), res.getInt("NumOfCop"), res.getInt("NumLeft")));
@@ -105,6 +91,7 @@ public class LibraryModel {
 					sb.append("\t(No Authors)\n"); 
 				else
 					sb.append(String.format("\t%s: %s\n", (authors.contains(",")? "Authors" : "Author"), authors));			}
+			
 			return sb.toString();
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
@@ -114,40 +101,7 @@ public class LibraryModel {
 	}
 
 	public String showLoanedBooks() {
-		return "Show Loaned Books Stub";
-	}
-
-	public String showAuthor(int authorID) {
-		String author = String.format("Select AuthorId, trim(BOTH ' ' from Name) as Name, trim(BOTH ' ' from Surname) as Surname FROM Author a Where a.authorId = %d;", authorID);
-		String books = String.format("select * from Book b, Book_Author ba Where b.isbn = ba.isbn AND ba.authorId = %d;", authorID);
-		Statement stmt;
-		try {
-			stmt = con.createStatement();
-			ResultSet res = stmt.executeQuery(author);
-			//CHECK FOR BADNESS
-			StringBuilder sb = new StringBuilder();
-			sb.append("Show Author:"+"\n");
-
-			while(res.next()){				
-				sb.append(String.format("\t%d - %s %s\n",res.getInt("AuthorId"), res.getString("Name"), res.getString("Surname")));
-			}
-			sb.append("\tWritten: \n");
-			stmt = con.createStatement();
-			res = stmt.executeQuery(books);
-			boolean hasBooks = false;
-			while(res.next()){
-				hasBooks = true;
-				sb.append(String.format("\t\t%d - %s\n", res.getInt("isbn"), res.getString("title")));
-			}
-			if(!hasBooks){
-				sb.append("\t\t(No Books)\n");
-			}
-			return sb.toString();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return (e.getMessage());
-		}	
+		return "loane books stub";
 	}
 
 	public String showAllAuthors() {
@@ -232,6 +186,7 @@ public class LibraryModel {
 			con.setAutoCommit(false);
 			Statement custStmt = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
 			Statement bookStmt = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+			Statement constraint = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
 			Statement insertStmt = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
 
 			ResultSet customer = custStmt.executeQuery("SELECT * FROM Customer WHERE CustomerID = "+ customerID +" FOR UPDATE;");
@@ -249,7 +204,22 @@ public class LibraryModel {
 				System.out.println("No book exists with isbn "+ isbn);
 				return "No book exists with isbn "+ isbn;
 			}
-
+			
+			ResultSet constraintCheck = constraint.executeQuery("SELECT * FROM Cust_Book WHERE ISBN = "+isbn+" AND CustomerID = "+customerID+";");
+			if(constraintCheck.next()){
+				con.rollback();
+				con.setAutoCommit(true);
+				System.out.println("That customer has already loaned out this book.");
+				return "The customer with ID "+customerID+ " has already loaned the book with ISBN "+ isbn;
+			}
+			book.first();
+			if(book.getInt("numLeft") == 0){
+				con.rollback();
+				con.setAutoCommit(true);
+				System.out.println("No copies of the book with ISBN "+ isbn+" is available");
+				return "No copies of the book with ISBN "+ isbn+" is available";
+			}
+			
 			String insert = String.format("INSERT INTO Cust_Book VALUES (%d, '%d-%d-%d', %d);", isbn, year, month, day, customerID);
 			insertStmt.executeUpdate(insert);
 			showMessageDialog(dialogParent, "The book is soon to be borrowed");
@@ -280,7 +250,8 @@ public class LibraryModel {
 			Statement custStmt = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
 			Statement bookStmt = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
 			Statement deleteStmt = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
-
+			Statement constraint = con.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_UPDATABLE);
+			
 			ResultSet customer = custStmt.executeQuery("SELECT * FROM Customer WHERE CustomerID = "+ customerID +" FOR UPDATE;");
 			if(!customer.next()){
 				con.rollback();
@@ -296,7 +267,15 @@ public class LibraryModel {
 				System.out.println("No book exists with isbn "+ isbn);
 				return "No book exists with isbn "+ isbn;
 			}
-
+			
+			ResultSet constraintCheck = constraint.executeQuery("SELECT * FROM Cust_Book WHERE ISBN = "+isbn+" AND CustomerID = "+customerID+";");
+			if(!constraintCheck.next()){
+				con.rollback();
+				con.setAutoCommit(true);
+				System.out.println("The customer has not previously loaned out this book");
+				return "The customer with ID "+customerID+ " has not loaned the book with ISBN "+ isbn;
+			}
+			
 			String delete = String.format("DELETE FROM Cust_Book WHERE isbn = %d AND customerId = %d;", isbn, customerID);
 			deleteStmt.executeUpdate(delete);
 			showMessageDialog(dialogParent, "The book is soon to be returned");
@@ -321,6 +300,12 @@ public class LibraryModel {
 	}
 
 	public void closeDBConnection() {
+		try {
+			con.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public String deleteCus(int customerID) {
@@ -334,7 +319,7 @@ public class LibraryModel {
 	public String deleteBook(int isbn) {
 		return "Delete Book";
 	}
-
+	
 	private String getUrl() {
 		return "jdbc:postgresql://localhost:5432/mortimmatt_jdbc";
 	}
