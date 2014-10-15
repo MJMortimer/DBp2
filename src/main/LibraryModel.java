@@ -38,7 +38,7 @@ public class LibraryModel {
 	}
 
 	public String bookLookup(int isbn) {
-		String select =String.format("SELECT b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors " 
+		String select =String.format("SELECT b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors "
 				+"FROM Book b LEFT OUTER JOIN Book_Author ba ON (b.isbn = ba.isbn) LEFT OUTER JOIN Author a ON (a.authorid = ba.authorid)"
 				+"WHERE b.isbn = %d "
 				+"GROUP BY b.isbn "
@@ -55,12 +55,13 @@ public class LibraryModel {
 				return "No book exists with isbn "+ isbn;
 			}
 			
-			while(res.next()){				
+
+			while(res.next()){
 				sb.append(String.format("\t%d: %s\n",res.getInt("ISBN"), res.getString("title")));
 				sb.append(String.format("\tEdition: %d - Number of Copies: %d - Copies Left: %d\n", res.getInt("Edition_No"), res.getInt("NumOfCop"), res.getInt("NumLeft")));
 				String authors = res.getString("authors");
-				if(authors.length() == 0)  
-					sb.append("\t(No Authors)"); 
+				if(authors.length() == 0)
+					sb.append("\t(No Authors)");
 				else
 					sb.append(String.format("\t%s: %s", (authors.contains(",")? "Authors" : "Author"), authors));
 			}
@@ -69,11 +70,11 @@ public class LibraryModel {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return (e.getMessage());
-		}		
+		}
 	}
 
 	public String showCatalogue() {
-		String select =String.format("SELECT b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors " 
+		String select =String.format("SELECT b.isbn, b.title, b.edition_no, b.NumOfCop, b.numLeft, array_to_string(array_agg(trim(BOTH ' ' from a.surname) ORDER BY ba.authorseqno ASC),', ') as authors "
 				+"FROM Book b LEFT OUTER JOIN Book_Author ba ON (b.isbn = ba.isbn) LEFT OUTER JOIN Author a ON (a.authorid = ba.authorid)"
 				+"GROUP BY b.isbn "
 				+"ORDER BY b.isbn ASC;");
@@ -83,12 +84,14 @@ public class LibraryModel {
 			ResultSet res = stmt.executeQuery(select);
 			StringBuilder sb = new StringBuilder();
 			sb.append("Show Catalogue:"+"\n");
-			while(res.next()){				
+
+
+			while(res.next()){
 				sb.append(String.format("%d: %s\n",res.getInt("ISBN"), res.getString("title")));
 				sb.append(String.format("\tEdition: %d - Number of Copies: %d - Copies Left: %d\n", res.getInt("Edition_No"), res.getInt("NumOfCop"), res.getInt("NumLeft")));
 				String authors = res.getString("authors");
-				if(authors.length() == 0)  
-					sb.append("\t(No Authors)\n"); 
+				if(authors.length() == 0)
+					sb.append("\t(No Authors)\n");
 				else
 					sb.append(String.format("\t%s: %s\n", (authors.contains(",")? "Authors" : "Author"), authors));			}
 			
@@ -97,11 +100,44 @@ public class LibraryModel {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return (e.getMessage());
-		}		
+		}
 	}
 
 	public String showLoanedBooks() {
-		return "loane books stub";
+		return "Show Loaned Books Stub";
+	}
+
+	public String showAuthor(int authorID) {
+		String author = String.format("Select AuthorId, trim(BOTH ' ' from Name) as Name, trim(BOTH ' ' from Surname) as Surname FROM Author a Where a.authorId = %d;", authorID);
+		String books = String.format("select * from Book b, Book_Author ba Where b.isbn = ba.isbn AND ba.authorId = %d;", authorID);
+		Statement stmt;
+		try {
+			stmt = con.createStatement();
+			ResultSet res = stmt.executeQuery(author);
+			//CHECK FOR BADNESS
+			StringBuilder sb = new StringBuilder();
+			sb.append("Show Author:"+"\n");
+
+			while(res.next()){
+				sb.append(String.format("\t%d - %s %s\n",res.getInt("AuthorId"), res.getString("Name"), res.getString("Surname")));
+			}
+			sb.append("\tWritten: \n");
+			stmt = con.createStatement();
+			res = stmt.executeQuery(books);
+			boolean hasBooks = false;
+			while(res.next()){
+				hasBooks = true;
+				sb.append(String.format("\t\t%d - %s\n", res.getInt("isbn"), res.getString("title")));
+			}
+			if(!hasBooks){
+				sb.append("\t\t(No Books)\n");
+			}
+			return sb.toString();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return (e.getMessage());
+		}
 	}
 
 	public String showAllAuthors() {
@@ -114,7 +150,7 @@ public class LibraryModel {
 			StringBuilder sb = new StringBuilder();
 			sb.append("Show All Authors:"+"\n");
 
-			while(res.next()){				
+			while(res.next()){
 				sb.append(String.format("\t%d: %s, %s\n",res.getInt("AuthorId"), res.getString("Surname"), res.getString("Name")));
 			}
 			return sb.toString();
@@ -122,7 +158,7 @@ public class LibraryModel {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return (e.getMessage());
-		}		
+		}
 	}
 
 	public String showCustomer(int customerID) {
@@ -136,7 +172,7 @@ public class LibraryModel {
 			StringBuilder sb = new StringBuilder();
 			sb.append("Show Customer:"+"\n");
 
-			while(res.next()){				
+			while(res.next()){
 				sb.append(String.format("\t%d: %s, %s\n",res.getInt("CustomerId"), res.getString("l_name").trim(), res.getString("f_name").trim()));
 			}
 			sb.append("\tBorrowed: \n");
@@ -155,7 +191,7 @@ public class LibraryModel {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return (e.getMessage());
-		}	
+		}
 	}
 
 	public String showAllCustomers() {
@@ -168,7 +204,7 @@ public class LibraryModel {
 			StringBuilder sb = new StringBuilder();
 			sb.append("Show All Customers:"+"\n");
 
-			while(res.next()){	
+			while(res.next()){
 				String city = res.getString("city");
 				sb.append(String.format("\t%d: %s, %s - %s\n",res.getInt("CustomerId"), res.getString("l_name").trim(), res.getString("f_name").trim(), city == null ? "(no city)": city.trim()));
 			}
@@ -223,7 +259,7 @@ public class LibraryModel {
 			String insert = String.format("INSERT INTO Cust_Book VALUES (%d, '%d-%d-%d', %d);", isbn, year, month, day, customerID);
 			insertStmt.executeUpdate(insert);
 			showMessageDialog(dialogParent, "The book is soon to be borrowed");
-			book.first();			
+			book.first();
 			book.updateInt("numLeft", book.getInt("numleft")-1);
 			book.updateRow();
 			con.commit();
@@ -279,7 +315,7 @@ public class LibraryModel {
 			String delete = String.format("DELETE FROM Cust_Book WHERE isbn = %d AND customerId = %d;", isbn, customerID);
 			deleteStmt.executeUpdate(delete);
 			showMessageDialog(dialogParent, "The book is soon to be returned");
-			book.first();			
+			book.first();
 			book.updateInt("numLeft", book.getInt("numleft")+1);
 			book.updateRow();
 			con.commit();
@@ -321,6 +357,7 @@ public class LibraryModel {
 	}
 	
 	private String getUrl() {
-		return "jdbc:postgresql://localhost:5432/mortimmatt_jdbc";
+		//return "jdbc:postgresql://localhost:5432/mortimmatt_jdbc";
+		return "jdbc:postgresql://db.ecs.vuw.ac.nz:5432/mortimmatt_jdbc";
 	}
 }
